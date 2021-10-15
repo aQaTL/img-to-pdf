@@ -2,15 +2,9 @@ use anyhow::bail;
 use printpdf::{Image, Mm, PdfDocument};
 use std::fs::File;
 use std::io::{BufWriter, Read, Seek, Write};
+use std::path::Path;
 
-pub fn run() -> anyhow::Result<()> {
-	let files = ["assets/benchmark.png", "assets/cbr500r2022.png"];
-
-	let mut output_file = File::create("printpdf_test.pdf")?;
-	foo(&files, &mut output_file)
-}
-
-fn foo<W: Write>(filenames: &[&str], output: W) -> anyhow::Result<()> {
+pub fn write_pdf<W: Write, P: AsRef<Path>>(filenames: &[P], output: W) -> anyhow::Result<()> {
 	const DPI: f64 = 300.0;
 
 	let doc = PdfDocument::empty("img-to-pdf");
@@ -31,8 +25,8 @@ fn foo<W: Write>(filenames: &[&str], output: W) -> anyhow::Result<()> {
 	Ok(())
 }
 
-fn load_image(filename: &str) -> anyhow::Result<Image> {
-	let mut file = File::open(filename)?;
+fn load_image<P: AsRef<Path>>(filename: P) -> anyhow::Result<Image> {
+	let mut file = File::open(filename.as_ref())?;
 	let mut file_signature = [0u8; 8];
 	file.read_exact(&mut file_signature)?;
 	match file_signature {
@@ -56,7 +50,10 @@ fn load_image(filename: &str) -> anyhow::Result<Image> {
 				printpdf::image::codecs::jpeg::JpegDecoder::new(&mut file)?,
 			)?)
 		}
-		_ => bail!("{} has an unsupported file format", filename),
+		_ => bail!(
+			"{} has an unsupported file format",
+			filename.as_ref().display()
+		),
 	}
 }
 
