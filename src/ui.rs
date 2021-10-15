@@ -53,6 +53,7 @@ enum PdfGenerationState {
 	Nothing,
 	Working,
 	Done,
+	Failed(String),
 }
 
 #[derive(Default)]
@@ -102,8 +103,11 @@ impl Application for Ui {
 				);
 			}
 			Message::GeneratePdfResult(result) => {
-				self.pdf_generation_state = PdfGenerationState::Done;
 				info!("Generate pdf result: {:?}", result);
+				self.pdf_generation_state = match &*result {
+					Ok(_) => PdfGenerationState::Done,
+					Err(e) => PdfGenerationState::Failed(e.to_string()),
+				};
 			}
 			Message::ChooseOutputPath => {
 				return Command::perform(choose_output_path(), |output_path| {
@@ -179,7 +183,7 @@ impl Application for Ui {
 			.height(Length::Fill)
 			.push(buttons_row);
 
-		match self.pdf_generation_state {
+		match &self.pdf_generation_state {
 			PdfGenerationState::Working => {
 				column = column.push(
 					Container::new(Text::new("Generating pdf..."))
@@ -190,6 +194,13 @@ impl Application for Ui {
 			PdfGenerationState::Done => {
 				column = column.push(
 					Container::new(Text::new("Done"))
+						.width(Length::Fill)
+						.center_x(),
+				)
+			}
+			PdfGenerationState::Failed(err) => {
+				column = column.push(
+					Container::new(Text::new(format!("Failed: {}", err)))
 						.width(Length::Fill)
 						.center_x(),
 				)
