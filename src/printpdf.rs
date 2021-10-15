@@ -1,7 +1,8 @@
 use anyhow::bail;
+use printpdf::image::{self, DynamicImage};
 use printpdf::{Image, Mm, PdfDocument};
 use std::fs::File;
-use std::io::{BufWriter, Read, Seek, Write};
+use std::io::{BufReader, BufWriter, Read, Seek, Write};
 use std::path::Path;
 
 pub fn write_pdf<W: Write, P: AsRef<Path>>(filenames: &[P], output: W) -> anyhow::Result<()> {
@@ -32,23 +33,30 @@ fn load_image<P: AsRef<Path>>(filename: P) -> anyhow::Result<Image> {
 	match file_signature {
 		[b'B', b'M', _, _, _, _, _, _] => {
 			file.rewind()?;
-			Ok(Image::try_from(
-				printpdf::image::codecs::bmp::BmpDecoder::new(&mut file)?,
-			)?)
+			Ok(Image::try_from(image::codecs::bmp::BmpDecoder::new(
+				&mut file,
+			)?)?)
 		}
 		[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] => {
 			file.rewind()?;
-			Ok(Image::try_from(
-				printpdf::image::codecs::png::PngDecoder::new(&mut file)?,
-			)?)
+			let mut image =
+				image::io::Reader::with_format(BufReader::new(&mut file), image::ImageFormat::Png)
+					.decode()?;
+
+			// Workaround around some bug that causes png's with alpha channel to not render properly
+			if image.color().has_alpha() {
+				image = DynamicImage::ImageRgb8(image.into_rgb8());
+			}
+
+			Ok(Image::from_dynamic_image(&image))
 		}
 		[0xFF, 0xD8, 0xFF, 0xDB, _, _, _, _]
 		| [0xFF, 0xD8, 0xFF, 0xEE, _, _, _, _]
 		| [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46] => {
 			file.rewind()?;
-			Ok(Image::try_from(
-				printpdf::image::codecs::jpeg::JpegDecoder::new(&mut file)?,
-			)?)
+			Ok(Image::try_from(image::codecs::jpeg::JpegDecoder::new(
+				&mut file,
+			)?)?)
 		}
 		_ => bail!(
 			"{} has an unsupported file format",
