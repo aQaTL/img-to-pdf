@@ -9,4 +9,4 @@ Simple app for creating pdfs from a list of images.
 - Click on the `Output path` button to choose the output file path
 - Click `Generate Pdf`
 
-<video src="./assets/screen_rec.webm"></video>
+![Usage showcase](assets/usage.gif)
