@@ -261,7 +261,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "genpdf",
- "pdf-create",
  "printpdf 0.4.1",
 ]
 
@@ -413,15 +412,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60ac8dda2e5cc09bf6480e3b3feff9783db251710c922ae9369a429c51efdeb0"
 dependencies = [
  "ttf-parser",
-]
-
-[[package]]
-name = "pdf-create"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3676d694cc4f9c2239870cbcb01494542e399893bde506b225d2babf43c9315"
-dependencies = [
- "chrono",
 ]
 
 [[package]]
