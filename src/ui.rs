@@ -223,8 +223,11 @@ async fn generate_pdf(file_paths: Vec<PathBuf>, output_path: PathBuf) -> anyhow:
 	tokio::task::spawn_blocking(move || {
 		info!("Generating pdf from {:#?}", file_paths);
 		info!("Output path: {}", output_path.display());
-		let mut output_file = File::create(output_path)?;
-		crate::printpdf::write_pdf(&file_paths, &mut output_file)?;
+		let mut output_file = File::create(&output_path)?;
+		if let Err(e) = crate::printpdf::write_pdf(&file_paths, &mut output_file) {
+			let _ = std::fs::remove_file(&output_path);
+			return Err(e);
+		}
 		Ok(())
 	})
 	.await?
