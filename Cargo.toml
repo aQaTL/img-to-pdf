@@ -13,6 +13,5 @@ iced_native = "0.4"
 tokio = { version  = "1", features = ["rt"] }
 rfd = "0.5"
 printpdf = { version = "0.4" }
-genpdf = { version = "0.2", optional = true, features = ["images"] }
 log = "0.4"
 flexi_logger = "0.19"

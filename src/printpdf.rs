@@ -1,5 +1,5 @@
 use anyhow::bail;
-use printpdf::image::{self, DynamicImage};
+use printpdf::image::{self, DynamicImage, GenericImage, ImageBuffer, Rgb, RgbImage};
 use printpdf::{Image, Mm, PdfDocument};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Seek, Write};
@@ -45,7 +45,27 @@ fn load_image<P: AsRef<Path>>(filename: P) -> anyhow::Result<Image> {
 
 			// Workaround around some bug that causes png's with alpha channel to not render properly
 			if image.color().has_alpha() {
-				image = DynamicImage::ImageRgb8(image.into_rgb8());
+				let rgba_image = image.into_rgba8();
+				let (width, height) = rgba_image.dimensions();
+				let mut rgb_image: RgbImage = ImageBuffer::new(width, height);
+
+				let (bg_red, bg_green, bg_blue) = (255.0, 255.0, 255.0);
+
+				for (x, y, pixel) in rgba_image.enumerate_pixels() {
+					let alpha_float = pixel.0[3] as f64 / 255.0;
+					let (red_float, green_float, blue_float) =
+						(pixel.0[0] as f64, pixel.0[1] as f64, pixel.0[2] as f64);
+					let red = (1.0 - alpha_float) * bg_red + alpha_float * red_float;
+					let blue = (1.0 - alpha_float) * bg_green + alpha_float * green_float;
+					let green = (1.0 - alpha_float) * bg_blue + alpha_float * blue_float;
+
+					let pixel = Rgb::from([red as u8, blue as u8, green as u8]);
+					unsafe {
+						rgb_image.unsafe_put_pixel(x, y, pixel);
+					}
+				}
+
+				image = DynamicImage::ImageRgb8(rgb_image);
 			}
 
 			Ok(Image::from_dynamic_image(&image))
