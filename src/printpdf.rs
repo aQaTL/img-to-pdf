@@ -44,7 +44,7 @@ fn load_image<P: AsRef<Path>>(filename: P) -> anyhow::Result<Image> {
 					.decode()?;
 
 			// Workaround around some bug that causes png's with alpha channel to not render properly
-            // https://github.com/fschutt/printpdf/issues/84
+			// https://github.com/fschutt/printpdf/issues/84
 			// This converts the image to RGBA and then to RGB, replacing alpha with a white
 			// background.
 			if image.color().has_alpha() {
