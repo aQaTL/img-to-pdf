@@ -44,6 +44,7 @@ fn load_image<P: AsRef<Path>>(filename: P) -> anyhow::Result<Image> {
 					.decode()?;
 
 			// Workaround around some bug that causes png's with alpha channel to not render properly
+            // https://github.com/fschutt/printpdf/issues/84
 			if image.color().has_alpha() {
 				let rgba_image = image.into_rgba8();
 				let (width, height) = rgba_image.dimensions();
