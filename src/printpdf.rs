@@ -28,16 +28,16 @@ pub fn write_pdf<W: Write, P: AsRef<Path>>(filenames: &[P], output: W) -> anyhow
 
 fn load_image<P: AsRef<Path>>(filename: P) -> anyhow::Result<Image> {
 	let mut file = File::open(filename.as_ref())?;
-	let mut file_signature = [0u8; 8];
+	let mut file_signature = [0u8; 12];
 	file.read_exact(&mut file_signature)?;
 	match file_signature {
-		[b'B', b'M', _, _, _, _, _, _] => {
+		[b'B', b'M', _, _, _, _, _, _, _, _, _, _] => {
 			file.rewind()?;
 			Ok(Image::try_from(image::codecs::bmp::BmpDecoder::new(
 				&mut file,
 			)?)?)
 		}
-		[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] => {
+		[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, _, _, _, _] => {
 			file.rewind()?;
 			let mut image =
 				image::io::Reader::with_format(BufReader::new(&mut file), image::ImageFormat::Png)
@@ -73,9 +73,10 @@ fn load_image<P: AsRef<Path>>(filename: P) -> anyhow::Result<Image> {
 
 			Ok(Image::from_dynamic_image(&image))
 		}
-		[0xFF, 0xD8, 0xFF, 0xDB, _, _, _, _]
-		| [0xFF, 0xD8, 0xFF, 0xEE, _, _, _, _]
-		| [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46] => {
+		[0xFF, 0xD8, 0xFF, 0xDB, _, _, _, _, _, _, _, _]
+		| [0xFF, 0xD8, 0xFF, 0xEE, _, _, _, _, _, _, _, _]
+		| [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01]
+		| [0xFF, 0xD8, 0xFF, 0xE1, _, _, 0x45, 0x78, 0x69, 0x66, 0x00, 0x00] => {
 			file.rewind()?;
 			Ok(Image::try_from(image::codecs::jpeg::JpegDecoder::new(
 				&mut file,
